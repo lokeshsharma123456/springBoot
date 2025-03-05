@@ -1,52 +1,56 @@
 package com.sharma.journalApp.controller;
 
-import com.sharma.journalApp.entity.JournalEntity;
+import com.sharma.journalApp.entity.JournalEntry;
+import com.sharma.journalApp.services.JournalEntryService;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.swing.text.html.Option;
+import java.util.*;
 
 @RestController
 @RequestMapping("/journal")
-public class JournalEntryController {
+public class JournalEntryControllerV2 {
 
-    private Map<Long, JournalEntity> je = new HashMap<>();
+    @Autowired
+    private JournalEntryService journalEntryService;
 
     @GetMapping
-    public List<JournalEntity> getAll(){
-        return new ArrayList<>(je.values());
+    public List<JournalEntry>getAll(){
+        return journalEntryService.getAll();
     }
+
     @PostMapping
-    public boolean createEntry(@RequestBody JournalEntity myEntity){
-        je.put(myEntity.getId(), myEntity);
-        return true;
+    public ResponseEntity<JournalEntry> createEntry(@RequestBody JournalEntry myEntity){
+        try{
+            journalEntryService.saveEntry(myEntity);
+            return new ResponseEntity<>(myEntity, HttpStatus.CREATED);
+        }catch (Exception e){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
     @GetMapping("id/{myID}")
-    public JournalEntity getByID(@PathVariable Long myID){
-        if(je.containsKey(myID)){
-            return je.get(myID);
+    public  ResponseEntity<JournalEntry> getByID(@PathVariable ObjectId myID){
+        Optional<JournalEntry> journalEntry = Optional.ofNullable(journalEntryService.getEntryById(myID));
+        if (journalEntry.isPresent()){
+            return new ResponseEntity<>(journalEntry.get(), HttpStatus.OK);
         }
-        else{
-            return null;
-        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @DeleteMapping("id/{myID}")
-    public JournalEntity deleteByID(@PathVariable Long myID){
-        if(je.containsKey(myID)){
-            return je.remove(myID);
-        }
-        else return  null;
+    public ResponseEntity<JournalEntry> deleteByID(@PathVariable ObjectId myID){
+       journalEntryService.deleteByID(myID);
+       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PostMapping("id/{myID}")
-    public JournalEntity updateByID(@PathVariable Long myID, @RequestBody JournalEntity myEntity){
-        if(je.containsKey(myID)){
-            return je.put(myID, myEntity);
-        }
-        else return  null;
+    public ResponseEntity<JournalEntry> updateByID(@PathVariable ObjectId myID, @RequestBody JournalEntry myEntity){
+
+        return  journalEntryService.updateByID(myID, myEntity);
     }
 
 }
